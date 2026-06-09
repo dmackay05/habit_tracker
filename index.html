@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Habits</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1a1f2e;
+    --surface: #242938;
+    --card: #2d3348;
+    --border: #383d52;
+    --coral: #e8654a;
+    --coral-dim: rgba(232,101,74,0.15);
+    --sage: #7db88a;
+    --sage-dim: rgba(125,184,138,0.15);
+    --text: #f0ede8;
+    --text-muted: #8a8fa8;
+    --text-dim: #5a5f78;
+    --amber: #f5a623;
+    --tab-h: 64px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    padding: 20px 20px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .app-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .app-title span { color: var(--coral); }
+  .header-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .tab-btn.active {
+    color: var(--coral);
+    border-bottom-color: var(--coral);
+  }
+
+  /* MAIN */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    padding-bottom: 80px;
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* TODAY SECTION */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    margin-top: 4px;
+  }
+
+  /* HABIT CARD */
+  .habit-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .habit-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--border);
+    transition: background 0.2s;
+  }
+  .habit-card.done::before { background: var(--sage); }
+  .habit-card:hover { border-color: var(--coral); }
+  .habit-card.done {
+    background: var(--surface);
+    border-color: rgba(125,184,138,0.3);
+  }
+
+  .check-circle {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    font-size: 14px;
+  }
+  .habit-card.done .check-circle {
+    background: var(--sage);
+    border-color: var(--sage);
+  }
+
+  .habit-info { flex: 1; }
+  .habit-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+    transition: color 0.2s;
+  }
+  .habit-card.done .habit-name {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+  .habit-meta {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .streak-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  .streak-badge.hot { color: var(--amber); }
+  .streak-flame {
+    font-size: 16px;
+    filter: grayscale(1);
+    transition: filter 0.2s;
+  }
+  .streak-badge.hot .streak-flame { filter: grayscale(0); }
+
+  /* ADD HABIT */
+  .add-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+  .add-section h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+  .form-group { margin-bottom: 12px; }
+  .form-group label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .form-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--coral); }
+  .form-input::placeholder { color: var(--text-dim); }
+
+  .btn {
+    padding: 10px 18px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-primary { background: var(--coral); color: white; }
+  .btn-primary:hover { background: #d4553a; }
+  .btn-danger { background: transparent; color: var(--coral); border: 1px solid var(--coral); font-size: 12px; padding: 6px 12px; }
+  .btn-danger:hover { background: var(--coral-dim); }
+
+  /* SYNC STATUS */
+  .sync-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .sync-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+  }
+  .sync-dot.ok { background: var(--sage); }
+  .sync-dot.error { background: var(--coral); }
+  .sync-dot.syncing { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* DASHBOARD */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+  .stat-number {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+  }
+  .stat-number.coral { color: var(--coral); }
+  .stat-number.sage { color: var(--sage); }
+  .stat-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* HISTORY TABLE */
+  .history-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .history-header {
+    padding: 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .history-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-habit { flex: 1; font-size: 14px; font-weight: 500; }
+  .history-date { font-size: 12px; color: var(--text-muted); }
+
+  /* HEATMAP */
+  .heatmap-wrap { margin-bottom: 20px; }
+  .heatmap-habit-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .heatmap-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    margin-bottom: 16px;
+  }
+  .hm-cell {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    background: var(--border);
+    title: '';
+  }
+  .hm-cell.done { background: var(--sage); }
+  .hm-cell.today { outline: 2px solid var(--coral); outline-offset: 1px; }
+
+  /* GEAR BUTTON */
+  .gear-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+    transition: all 0.2s;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  }
+  .gear-btn:hover { border-color: var(--coral); color: var(--coral); transform: rotate(30deg); }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 440px;
+  }
+  .modal h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .empty-state .emoji { font-size: 36px; margin-bottom: 12px; }
+
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s;
+  }
+  .delete-btn:hover { color: var(--coral); }
+
+  .toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 300;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="app-title">Daily<span>.</span></div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab-btn active" onclick="switchTab('today')">Today</button>
+  <button class="tab-btn" onclick="switchTab('dashboard')">Dashboard</button>
+</div>
+
+<main>
+  <!-- TODAY TAB -->
+  <div class="tab-panel active" id="tab-today">
+    <div class="sync-bar">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncStatus">Not connected — add your App Script URL in ⚙️</span>
+      <button onclick="manualSync()" style="margin-left:auto;background:none;border:none;color:var(--coral);font-family:inherit;font-size:12px;cursor:pointer;font-weight:600;">Sync</button>
+    </div>
+
+    <div class="section-label">Today's Habits</div>
+    <div id="habitList"></div>
+
+    <div class="add-section">
+      <h3>Add a New Habit</h3>
+      <div class="form-group">
+        <label>Habit Name</label>
+        <input class="form-input" id="newHabitName" placeholder="e.g. Clean the dishes" />
+      </div>
+      <div class="form-group">
+        <label>Category (optional)</label>
+        <input class="form-input" id="newHabitCat" placeholder="e.g. Chores, Learning, Health" />
+      </div>
+      <button class="btn btn-primary" onclick="addHabit()">Add Habit</button>
+    </div>
+  </div>
+
+  <!-- DASHBOARD TAB -->
+  <div class="tab-panel" id="tab-dashboard">
+    <div class="section-label">This Week at a Glance</div>
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number coral" id="statTotal">0</div>
+        <div class="stat-label">Habits</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number sage" id="statToday">0</div>
+        <div class="stat-label">Done Today</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="statStreak">🔥 0</div>
+        <div class="stat-label">Best Streak</div>
+      </div>
+    </div>
+
+    <div class="section-label">30-Day History</div>
+    <div id="heatmapSection" class="heatmap-wrap"></div>
+
+    <div class="section-label">Recent Log</div>
+    <div class="history-card">
+      <div class="history-header">
+        <span>Completions</span>
+        <span id="totalCompletions" style="font-size:12px;color:var(--text-muted)"></span>
+      </div>
+      <div id="historyList"></div>
+    </div>
+  </div>
+</main>
+
+<!-- GEAR BUTTON -->
+<button class="gear-btn" onclick="openSettings()" title="Settings">⚙️</button>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <h2>Settings</h2>
+    <p>Paste your Google Apps Script Web App URL below to enable syncing your habits and completions to Google Sheets.</p>
+    <div class="form-group">
+      <label>Apps Script URL</label>
+      <input class="form-input" id="scriptUrl" placeholder="https://script.google.com/macros/s/..." />
+    </div>
+    <p style="margin-top:-8px; font-size:12px; color:var(--text-dim);">
+      Deploy the provided Apps Script as a Web App (Execute as: Me, Who has access: Anyone). The URL ends in <code style="color:var(--coral)">/exec</code>.
+    </p>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save & Connect</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────
+let habits = JSON.parse(localStorage.getItem('habits') || '[]');
+let log = JSON.parse(localStorage.getItem('log') || '[]');
+let scriptUrl = localStorage.getItem('scriptUrl') || '';
+const todayKey = () => new Date().toISOString().slice(0, 10);
+
+// ─── INIT ─────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric'});
+  if (scriptUrl) document.getElementById('scriptUrl').value = scriptUrl;
+  renderHabits();
+  renderDashboard();
+  updateSyncStatus('idle');
+  if (scriptUrl) fetchFromSheet();
+});
+
+// ─── TABS ─────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+}
+
+// ─── HABITS ───────────────────────────────────────────────
+function addHabit() {
+  const name = document.getElementById('newHabitName').value.trim();
+  const cat = document.getElementById('newHabitCat').value.trim();
+  if (!name) { showToast('Please enter a habit name'); return; }
+  const habit = { id: Date.now().toString(), name, category: cat || 'General', created: todayKey() };
+  habits.push(habit);
+  saveLocal();
+  document.getElementById('newHabitName').value = '';
+  document.getElementById('newHabitCat').value = '';
+  renderHabits();
+  showToast('Habit added ✓');
+  pushToSheet();
+}
+
+function deleteHabit(id) {
+  habits = habits.filter(h => h.id !== id);
+  log = log.filter(l => l.habitId !== id);
+  saveLocal();
+  renderHabits();
+  showToast('Habit removed');
+  pushToSheet();
+}
+
+function toggleHabit(id) {
+  const today = todayKey();
+  const existing = log.find(l => l.habitId === id && l.date === today);
+  if (existing) {
+    log = log.filter(l => !(l.habitId === id && l.date === today));
+    showToast('Marked incomplete');
+  } else {
+    log.push({ habitId: id, date: today, ts: new Date().toISOString() });
+    showToast('Done! ✓');
+  }
+  saveLocal();
+  renderHabits();
+  renderDashboard();
+  pushToSheet();
+}
+
+function isDoneToday(id) {
+  return log.some(l => l.habitId === id && l.date === todayKey());
+}
+
+function getStreak(id) {
+  const dates = log.filter(l => l.habitId === id).map(l => l.date).sort().reverse();
+  if (!dates.length) return 0;
+  let streak = 0;
+  let d = new Date();
+  // count backwards from today
+  for (let i = 0; i < 365; i++) {
+    const key = d.toISOString().slice(0, 10);
+    if (dates.includes(key)) { streak++; d.setDate(d.getDate() - 1); }
+    else if (i === 0) { d.setDate(d.getDate() - 1); } // skip if today not done yet
+    else break;
+  }
+  return streak;
+}
+
+function renderHabits() {
+  const el = document.getElementById('habitList');
+  if (!habits.length) {
+    el.innerHTML = `<div class="empty-state"><div class="emoji">📋</div>No habits yet.<br>Add one below to get started.</div>`;
+    return;
+  }
+  el.innerHTML = habits.map(h => {
+    const done = isDoneToday(h.id);
+    const streak = getStreak(h.id);
+    const hot = streak >= 3;
+    return `
+      <div class="habit-card ${done ? 'done' : ''}" onclick="toggleHabit('${h.id}')">
+        <div class="check-circle">${done ? '✓' : ''}</div>
+        <div class="habit-info">
+          <div class="habit-name">${h.name}</div>
+          <div class="habit-meta">${h.category}</div>
+        </div>
+        <div class="streak-badge ${hot ? 'hot' : ''}">
+          <span class="streak-flame">🔥</span>${streak}
+        </div>
+        <button class="delete-btn" onclick="event.stopPropagation();deleteHabit('${h.id}')" title="Remove">✕</button>
+      </div>`;
+  }).join('');
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────
+function renderDashboard() {
+  const today = todayKey();
+  const doneToday = habits.filter(h => isDoneToday(h.id)).length;
+  const bestStreak = habits.reduce((best, h) => Math.max(best, getStreak(h.id)), 0);
+
+  document.getElementById('statTotal').textContent = habits.length;
+  document.getElementById('statToday').textContent = doneToday;
+  document.getElementById('statStreak').textContent = '🔥 ' + bestStreak;
+  document.getElementById('totalCompletions').textContent = log.length + ' total';
+
+  // Heatmaps
+  const hmEl = document.getElementById('heatmapSection');
+  if (!habits.length) { hmEl.innerHTML = '<div style="color:var(--text-dim);font-size:13px;">No habits yet.</div>'; }
+  else {
+    hmEl.innerHTML = habits.map(h => {
+      const cells = [];
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        const k = d.toISOString().slice(0, 10);
+        const done = log.some(l => l.habitId === h.id && l.date === k);
+        const isToday = k === today;
+        cells.push(`<div class="hm-cell ${done ? 'done' : ''} ${isToday ? 'today' : ''}" title="${k}"></div>`);
+      }
+      return `<div class="heatmap-habit-label">${h.name}</div><div class="heatmap-grid">${cells.join('')}</div>`;
+    }).join('');
+  }
+
+  // Recent log
+  const histEl = document.getElementById('historyList');
+  const recent = [...log].sort((a,b) => b.ts?.localeCompare(a.ts || '') || 0).slice(0, 20);
+  if (!recent.length) {
+    histEl.innerHTML = `<div class="empty-state" style="padding:20px"><div class="emoji" style="font-size:24px">📭</div>No completions yet</div>`;
+  } else {
+    histEl.innerHTML = recent.map(l => {
+      const h = habits.find(x => x.id === l.habitId);
+      if (!h) return '';
+      return `<div class="history-row">
+        <span style="font-size:16px">✅</span>
+        <div class="history-habit">${h.name}</div>
+        <div class="history-date">${l.date}</div>
+      </div>`;
+    }).filter(Boolean).join('');
+  }
+}
+
+// ─── SYNC ─────────────────────────────────────────────────
+function updateSyncStatus(state, msg) {
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncStatus');
+  dot.className = 'sync-dot';
+  if (state === 'ok') { dot.classList.add('ok'); txt.textContent = msg || 'Synced with Google Sheets'; }
+  else if (state === 'error') { dot.classList.add('error'); txt.textContent = msg || 'Sync failed'; }
+  else if (state === 'syncing') { dot.classList.add('syncing'); txt.textContent = 'Syncing…'; }
+  else { txt.textContent = scriptUrl ? 'Ready to sync' : 'Not connected — add your App Script URL in ⚙️'; }
+}
+
+async function pushToSheet() {
+  if (!scriptUrl) return;
+  updateSyncStatus('syncing');
+  try {
+    const payload = { action: 'push', habits, log };
+    await fetch(scriptUrl, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    updateSyncStatus('ok', 'Saved to Sheets — ' + new Date().toLocaleTimeString());
+  } catch(e) {
+    updateSyncStatus('error', 'Could not reach sheet');
+  }
+}
+
+async function fetchFromSheet() {
+  if (!scriptUrl) return;
+  updateSyncStatus('syncing');
+  try {
+    const res = await fetch(scriptUrl + '?action=pull');
+    const data = await res.json();
+    if (data.habits && data.log) {
+      habits = data.habits;
+      log = data.log;
+      saveLocal();
+      renderHabits();
+      renderDashboard();
+      updateSyncStatus('ok', 'Loaded from Sheets');
+    } else {
+      updateSyncStatus('ok', 'Sheets connected (no data yet)');
+    }
+  } catch(e) {
+    updateSyncStatus('error', 'Pull failed — check URL');
+  }
+}
+
+function manualSync() {
+  if (!scriptUrl) { openSettings(); return; }
+  fetchFromSheet();
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('scriptUrl').value = scriptUrl;
+  document.getElementById('settingsModal').classList.add('open');
+}
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('open');
+}
+function saveSettings() {
+  const url = document.getElementById('scriptUrl').value.trim();
+  scriptUrl = url;
+  localStorage.setItem('scriptUrl', url);
+  closeSettings();
+  showToast('Settings saved');
+  if (url) fetchFromSheet();
+  else updateSyncStatus('idle');
+}
+
+// ─── UTILS ────────────────────────────────────────────────
+function saveLocal() {
+  localStorage.setItem('habits', JSON.stringify(habits));
+  localStorage.setItem('log', JSON.stringify(log));
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+</script>
+</body>
+</html>
