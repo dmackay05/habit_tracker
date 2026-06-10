@@ -273,6 +273,10 @@ const uid = () => Math.random().toString(36).slice(2,10);
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('headerDate').textContent =
     new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  // Clean up any duplicate log entries (habitId+date must be unique)
+  const seen = new Set();
+  log = log.filter(l=>{ const k=l.habitId+'|'+l.date; if(seen.has(k)) return false; seen.add(k); return true; });
+  saveLocal();
   applyCols(colLayout, false);
   renderLanes();
   renderDashboard();
@@ -375,9 +379,13 @@ function deleteHabit(id){
   showToast('Removed');
 }
 
-function toggleHabit(id){
+function toggleHabit(id, event){
+  if(event){ event.stopPropagation(); event.preventDefault(); }
+  // Deduplicate first — remove any accidental duplicate entries for this habit+date
   const today=todayKey();
-  if(log.find(l=>l.habitId===id&&l.date===today)){
+  const existing=log.filter(l=>l.habitId===id&&l.date===today);
+  if(existing.length>0){
+    // Already logged today — remove all entries for it (handles duplicates too)
     log=log.filter(l=>!(l.habitId===id&&l.date===today));
     showToast('Marked incomplete');
   } else {
@@ -412,9 +420,9 @@ function renderLanes(){
     const ci8       = ci%8;
     const cards = catHabits.map(h=>{
       const d=isDoneToday(h.id), s=getStreak(h.id), hot=s>=3;
-      return '<div class="habit-card'+(d?' done':'')+'" data-habit-id="'+h.id+'" data-cat-id="'+cat.id+'" draggable="true">'+
-        '<span class="drag-handle" title="Drag to reorder">⠿</span>'+
-        '<div class="check-circle" onclick="toggleHabit(\''+h.id+'\')">'+( d?'✓':''  )+'</div>'+
+      return '<div class="habit-card'+(d?' done':'')+'" data-habit-id="'+h.id+'" data-cat-id="'+cat.id+'" draggable="false">'+
+        '<span class="drag-handle" draggable="true" title="Drag to reorder">⠿</span>'+
+        '<div class="check-circle" onclick="toggleHabit(\''+h.id+'\',event)">'+( d?'✓':''  )+'</div>'+
         '<div class="habit-info"><div class="habit-name">'+escHtml(h.name)+'</div></div>'+
         '<div class="streak-badge'+(hot?' hot':'')+'"><span class="streak-flame">🔥</span>'+s+'</div>'+
         '<button class="habit-del-btn" onclick="deleteHabit(\''+h.id+'\')" title="Remove">✕</button>'+
@@ -447,15 +455,19 @@ function escAttr(s){ return String(s).replace(/"/g,'&quot;').replace(/'/g,'&#39;
 let dragState=null;
 
 function attachDragListeners(){
-  // Habit cards
+  // Habit cards — drag via handle only
   document.querySelectorAll('.habit-card').forEach(card=>{
-    card.addEventListener('dragstart',e=>{
+    const handle = card.querySelector('.drag-handle');
+    if(!handle) return;
+    handle.addEventListener('dragstart',e=>{
       e.stopPropagation();
       dragState={type:'habit',id:card.dataset.habitId,srcCatId:card.dataset.catId};
       e.dataTransfer.effectAllowed='move';
+      // Must set card as drag image since handle is the draggable element
+      e.dataTransfer.setDragImage(card, 20, 20);
       setTimeout(()=>card.classList.add('dragging'),0);
     });
-    card.addEventListener('dragend',()=>{ card.classList.remove('dragging'); clearHL(); dragState=null; });
+    handle.addEventListener('dragend',()=>{ card.classList.remove('dragging'); clearHL(); dragState=null; });
   });
 
   // Lane headers
